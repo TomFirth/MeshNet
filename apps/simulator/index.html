@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeshNet God Mode</title>
+    <style>
+        body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; color: white; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 8px; border: 1px solid #444; width: 300px; pointer-events: none; }
+        #ui * { pointer-events: auto; }
+        .stat { color: #aaa; font-size: 14px; margin-bottom: 5px; }
+        .btn { background: #444; border: none; color: white; padding: 8px 12px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn:hover { background: #555; }
+        .btn-primary { background: #007bff; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h2 style="margin: 0 0 10px 0;">MeshNet Simulator</h2>
+        <div class="stat" id="nodeCount">Nodes: 0</div>
+        <div class="stat" id="msgCount">Saturation: 0%</div>
+        <button class="btn btn-primary" onclick="window.injectMessage()">Inject Global Alert</button>
+        <button class="btn" onclick="window.addNodes()">Add 50 Nodes</button>
+        <hr style="border: 0.5px solid #444; margin: 15px 0;">
+        <div id="inspector" style="display: none;">
+            <h4 style="margin: 0 0 5px 0;">Node Inspector</h4>
+            <div class="stat" id="inspectId">ID: -</div>
+            <div class="stat" id="inspectStorage">Msgs: 0</div>
+        </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

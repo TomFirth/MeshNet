@@ -45,8 +45,18 @@ npm run build -w @meshnet/protocol
 
 ## Running the Components
 
+### Visual Network Simulator (God Mode)
+Watch nodes move and gossip in real-time in your browser.
+```bash
+npm run start:simulator
+```
+**Controls:**
+- **Inject Global Alert:** Starts message propagation from Node 0.
+- **Add 50 Nodes:** Increase mesh density.
+- **Visuals:** Blue dots have received the message; grey dots have not.
+
 ### Developer CLI (Relay Node)
-Use this to test the protocol logic manually across multiple virtual nodes (A, B, C).
+Use this to test the protocol logic manually across virtual nodes (A, B, C).
 ```bash
 npm run start:relay
 ```

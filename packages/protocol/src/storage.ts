@@ -53,6 +53,12 @@ export class MessageRepository {
   }
 
   async getChannelMessages(channelId: string, limit: number = 50): Promise<Message[]> {
+    if (!channelId || channelId === '') {
+      return this.db.query<Message>(
+        `SELECT * FROM messages ORDER BY timestamp DESC LIMIT ?`,
+        [limit]
+      );
+    }
     return this.db.query<Message>(
       `SELECT * FROM messages WHERE channel_id = ? ORDER BY timestamp DESC LIMIT ?`,
       [channelId, limit]

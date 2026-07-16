@@ -51,13 +51,22 @@ class JsonFileDriver implements DatabaseDriver {
   async query<T>(sql: string, params: any[] = []): Promise<T[]> {
     const sql_up = sql.toUpperCase();
     if (sql_up.includes('FROM MESSAGES')) {
-      const channelId = params[0];
-      let results = this.data.messages;
-      if (channelId && channelId !== '' && channelId !== '00000000-0000-0000-0000-000000000000') {
-        results = results.filter(m => m.channelId === channelId);
+      let results = [...this.data.messages];
+
+      // If query has WHERE channel_id = ?, params[0] is channelId, params[1] is limit
+      // If query is SELECT * FROM messages, params[0] is just the limit!
+      if (sql_up.includes('WHERE CHANNEL_ID = ?')) {
+        const filterId = params[0];
+        if (filterId && filterId !== '' && filterId !== '00000000-0000-0000-0000-000000000000') {
+           results = results.filter(m => m.channelId === filterId);
+        }
       }
+
+      const limit = sql_up.includes('WHERE CHANNEL_ID = ?') ? params[1] : params[0];
+
       return results.map(m => ({ ...m, payload: new Uint8Array(m.payload) }))
-                    .sort((a, b) => b.timestamp - a.timestamp) as T[];
+                    .sort((a, b) => b.timestamp - a.timestamp)
+                    .slice(0, limit || 100) as T[];
     }
     if (sql_up.includes('FROM CHANNELS')) {
       return this.data.channels as T[];
@@ -72,7 +81,7 @@ class InternalBus {
   async sendInventory(peerId: string, msgIds: string[]): Promise<void> {
     const peer = this.nodes.get(peerId);
     if (peer) {
-      console.log(`  [MNP Stage 1] ${this.senderId} -> ${peerId}: Sending Inventory (${msgIds.length} IDs)`);
+      console.log(`  [MNP Stage 1] ${this.senderId} -> ${peerId}: Inventory (${msgIds.length} IDs)`);
       const bus = new InternalBus(this.nodes, peerId);
       await peer.engine.onInventoryReceived(this.senderId, msgIds, bus);
     }
@@ -81,7 +90,7 @@ class InternalBus {
   async requestMessages(peerId: string, msgIds: string[]): Promise<void> {
     const peer = this.nodes.get(peerId);
     if (peer) {
-      console.log(`  [MNP Stage 2] ${this.senderId} -> ${peerId}: Requesting ${msgIds.length} missing msgs`);
+      console.log(`  [MNP Stage 2] ${this.senderId} -> ${peerId}: Requesting ${msgIds.length} msgs`);
       const bus = new InternalBus(this.nodes, peerId);
       await peer.engine.onMessagesRequested(this.senderId, msgIds, bus);
     }
@@ -90,9 +99,8 @@ class InternalBus {
   async sendMessages(peerId: string, messages: Message[]): Promise<void> {
     const peer = this.nodes.get(peerId);
     if (peer) {
-      console.log(`  [MNP Stage 3] ${this.senderId} -> ${peerId}: Delivering ${messages.length} full payloads`);
+      console.log(`  [MNP Stage 3] ${this.senderId} -> ${peerId}: Delivering ${messages.length} payloads`);
       await peer.engine.onMessagesReceived(messages);
-      console.log(`  [MNP Status] ${peerId}: Successfully saved ${messages.length} messages.`);
     }
   }
 }
@@ -111,10 +119,10 @@ async function setupNodes() {
 }
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: `meshnet(${currentNodeId})> ` });
-console.log('MeshNet Gossip Debugger (Handshake v2)');
+console.log('MeshNet Gossip Debugger (Fix: Param Mapping)');
 
 setupNodes().then(() => {
-  console.log('Virtual Mesh Online. Nodes: A, B, C');
+  console.log('Nodes Online: A, B, C');
   rl.prompt();
 });
 
@@ -131,7 +139,7 @@ rl.on('line', async (line) => {
         if (target && nodes.has(target)) {
           currentNodeId = target;
           rl.setPrompt(`meshnet(${currentNodeId})> `);
-          console.log(`Switched context to Node ${currentNodeId}`);
+          console.log(`Switched to Node ${currentNodeId}`);
         } else { console.log('Node not found.'); }
         break;
       case 'create-channel':
@@ -143,25 +151,24 @@ rl.on('line', async (line) => {
         if (parts.length < 3) { console.log('Usage: send-message <channel_id> <text>'); break; }
         const msg: Message = { id: uuidv4(), channelId: parts[1], senderId: currentNodeId, timestamp: Date.now(), expiry: 0, priority: 1, payload: new TextEncoder().encode(parts.slice(2).join(' ')) };
         await node.repo.insertMessage(msg);
-        console.log(`Message saved to Node ${currentNodeId} outbox.`);
+        console.log(`Message saved to Node ${currentNodeId} store.`);
         break;
       case 'sync':
         const peerId = parts[1]?.toUpperCase();
         if (peerId && nodes.has(peerId) && peerId !== currentNodeId) {
-          console.log(`[MNP] Initiating Handshake: ${currentNodeId} <-> ${peerId}`);
+          console.log(`[MNP] Starting Handshake: ${currentNodeId} <-> ${peerId}`);
           await node.engine.onPeerDiscovered(peerId, new InternalBus(nodes, currentNodeId));
-          console.log(`[MNP] Handshake between ${currentNodeId} and ${peerId} complete.`);
-        } else { console.log("Invalid peer for sync."); }
-        break;
+          console.log(`[MNP] Handshake complete.`);
+        } break;
       case 'show-storage':
         const msgs = await node.repo.getChannelMessages('', 100);
-        console.log(`\n--- Local Storage [Node ${currentNodeId}] ---`);
-        msgs.forEach(m => console.log(`  [From: ${m.senderId}] "${new TextDecoder().decode(m.payload)}"`));
-        console.log(`Total: ${msgs.length} messages\n`);
+        console.log(`\n--- Local Storage [Node ${currentNodeId}] (${msgs.length} messages) ---`);
+        msgs.forEach(m => console.log(`  [${m.senderId}] "${new TextDecoder().decode(m.payload)}"`));
+        console.log("");
         break;
       case 'exit': rl.close(); break;
       default: console.log(`Unknown command: ${command}`);
     }
-  } catch (e) { console.error(`Handshake Failure: ${e}`); }
+  } catch (e) { console.error(`Error: ${e}`); }
   rl.prompt();
 }).on('close', () => process.exit(0));
