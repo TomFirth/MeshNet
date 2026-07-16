@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@meshnet/protocol": ["../../packages/protocol/src"]
+    }
+  },
+  "include": ["src/**/*"]
+}

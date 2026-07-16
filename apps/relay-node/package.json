@@ -1,0 +1,16 @@
+{
+  "name": "@meshnet/relay",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/main.ts",
+  "scripts": {
+    "start": "ts-node src/main.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@meshnet/protocol": "*",
+    "commander": "^11.0.0",
+    "inquirer": "^9.0.0",
+    "uuid": "14.0.1"
+  }
+}

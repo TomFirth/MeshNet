@@ -1,97 +1,85 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# MeshNet Monorepo
 
-# Getting Started
+MeshNet is a decentralized, serverless gossip network. This repository is organized as a monorepo to facilitate code sharing between mobile, desktop, and embedded platforms.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Tech Stack
 
-## Step 1: Start Metro
+- **Monorepo Manager:** [npm workspaces](https://docs.npmjs.com/cli/v7/using-npm/workspaces)
+- **Core Logic:** [TypeScript](https://www.typescriptlang.org/) (Models, Storage, Gossip)
+- **Mobile Platform:** [React Native](https://reactnative.dev/)
+- **Hardware Platform:** Node.js (Raspberry Pi)
+- **Simulator:** TypeScript (Web/Node)
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Repository Structure
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### `/apps` (Deployment Targets)
+- **`mobile/`**: React Native application (iOS/Android).
+- **`simulator/`**: TypeScript-based network visualizer.
+- **`relay-node/`**: Node.js CLI tool for Raspberry Pi/Linux.
 
-```sh
-# Using npm
-npm start
+### `/packages` (Shared Modules)
+- **`protocol/`**: The core TypeScript implementation of the MeshNet Protocol (MNP).
 
-# OR using Yarn
-yarn start
+### `/documentation`
+- Technical specifications, RFCs, identity models, and threat analysis.
+
+---
+
+## Getting Started
+
+### 1. Prerequisites
+- [Node.js](https://nodejs.org/) (v18+)
+- [npm](https://www.npmjs.com/)
+
+### 2. Installation
+```bash
+npm install
 ```
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+### 3. Build Core Protocol
+```bash
+npm run build -w @meshnet/protocol
 ```
 
-### iOS
+---
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+## Running the Components
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+### Developer CLI (Relay Node)
+Use this to test the protocol logic manually across multiple virtual nodes (A, B, C).
+```bash
+npm run start:relay
+```
+**Commands:**
+- `switch <node>`: Change context (e.g., `switch B`).
+- `create-channel <name>`: Create a new 128-bit UUID channel.
+- `send-message <channel_id> <text>`: Send a message from the current node.
+- `sync <peer>`: Manually trigger a gossip handshake (e.g., `sync B`).
+- `show-storage`: View the messages in the current node's SQLite database.
 
-```sh
-bundle install
+---
+
+## Testing
+
+### Core Protocol Logic
+Run the shared protocol unit tests (Storage, Gossip, Models):
+```bash
+cd packages/protocol
+cargo test
 ```
 
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
+### Simulation Logic
+The simulator includes tests for network convergence:
+```bash
+cd apps/simulator
+cargo test
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+---
 
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+## Documentation
+For detailed specifications, see the `/documentation` directory:
+- [Architecture](documentation/architecture.md)
+- [Protocol RFC](documentation/protocol.md)
+- [Identity Model](documentation/identity_model.md)
+- [Roadmap](documentation/roadmap.md)

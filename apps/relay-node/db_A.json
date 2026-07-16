@@ -1,0 +1,133 @@
+{
+  "messages": [
+    {
+      "id": "d057f2d9-521c-480e-9bdd-d2178b037de0",
+      "channel_id": "494327d5-ee1b-4fe7-8d96-1502ca218481",
+      "sender_id": "A",
+      "timestamp": 1784242752327,
+      "expiry": 0,
+      "priority": 1,
+      "payload": [
+        34,
+        73,
+        32,
+        108,
+        105,
+        107,
+        101,
+        32,
+        100,
+        117,
+        99,
+        107,
+        115,
+        34
+      ]
+    },
+    {
+      "id": "3b11e40e-cd77-4fe4-9b50-50696a313aa8",
+      "channelId": "38763e26-ec1f-4218-a3f3-efb3d43f4c79",
+      "senderId": "A",
+      "timestamp": 1784242940809,
+      "expiry": 0,
+      "priority": 1,
+      "payload": [
+        34,
+        73,
+        32,
+        108,
+        105,
+        107,
+        101,
+        32,
+        100,
+        117,
+        99,
+        107,
+        115,
+        34
+      ]
+    },
+    {
+      "id": "a151100a-1f24-4dbb-84fb-fda6281d74ae",
+      "channelId": "38763e26-ec1f-4218-a3f3-efb3d43f4c79",
+      "senderId": "A",
+      "timestamp": 1784242964748,
+      "expiry": 0,
+      "priority": 1,
+      "payload": [
+        116,
+        101,
+        115,
+        116,
+        105,
+        110,
+        103,
+        32,
+        119,
+        105,
+        116,
+        104,
+        32,
+        115,
+        112,
+        97,
+        99,
+        101,
+        115
+      ]
+    },
+    {
+      "id": "3785358c-ecd7-4d87-8cf6-e8b17e74da4b",
+      "channelId": "675f6ff6-dfdf-440e-9d94-d63710f8042c",
+      "senderId": "A",
+      "timestamp": 1784243250830,
+      "expiry": 0,
+      "priority": 1,
+      "payload": [
+        116,
+        111,
+        111,
+        32,
+        109,
+        97,
+        110,
+        121,
+        32,
+        115,
+        101,
+        99,
+        114,
+        101,
+        116,
+        115
+      ]
+    }
+  ],
+  "channels": [
+    {
+      "id": "494327d5-ee1b-4fe7-8d96-1502ca218481",
+      "name": "General",
+      "channel_type": "Public",
+      "created_at": 1784242731625,
+      "scope": "global",
+      "is_subscribed": 1
+    },
+    {
+      "id": "38763e26-ec1f-4218-a3f3-efb3d43f4c79",
+      "name": "General",
+      "channelType": "Public",
+      "createdAt": 1784242924120,
+      "scope": "global",
+      "is_subscribed": 1
+    },
+    {
+      "id": "675f6ff6-dfdf-440e-9d94-d63710f8042c",
+      "name": "General",
+      "channelType": "Public",
+      "createdAt": 1784243233421,
+      "scope": "global",
+      "is_subscribed": 1
+    }
+  ]
+}
