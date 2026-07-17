@@ -8,14 +8,15 @@
   "scripts": {
     "test": "npm test --workspaces",
     "build": "npm run build --workspaces",
-    "start:relay": "npm start --workspace=@meshnet/relay",
-    "start:simulator": "npm start --workspace=@meshnet/simulator"
+    "start:relay": "npm run start --workspace=@meshnet/relay",
+    "start:simulator": "npm run start --workspace=@meshnet/simulator",
+    "start:client": "npm run start --workspace=@meshnet/mobile"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "ts-node": "^10.9.2",
     "jest": "^29.7.0",
+    "rimraf": "^5.0.10",
     "ts-jest": "^29.4.11",
-    "rimraf": "^5.0.10"
+    "ts-node": "^10.9.2",
+    "typescript": "~6.0.3"
   }
 }

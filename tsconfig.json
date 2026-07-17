@@ -2,7 +2,9 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "CommonJS",
-    "lib": ["ESNext"],
+    "lib": [
+      "ESNext"
+    ],
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
@@ -10,8 +12,15 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@meshnet/protocol": ["packages/protocol/src"]
+      "@meshnet/protocol": [
+        "packages/protocol/src"
+      ]
     }
   },
-  "exclude": ["**/node_modules", "**/dist", "**/Pods"]
+  "exclude": [
+    "**/node_modules",
+    "**/dist",
+    "**/Pods"
+  ],
+  "extends": "expo/tsconfig.base"
 }

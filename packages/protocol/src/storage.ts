@@ -71,6 +71,47 @@ export class MessageRepository {
     );
   }
 
+  async getUnsubscribedChannels(): Promise<Channel[]> {
+    return this.db.query<Channel>(
+      `SELECT * FROM channels WHERE is_subscribed = 0`
+    );
+  }
+
+  async subscribeToChannel(id: string): Promise<void> {
+    await this.db.execute(
+      `UPDATE channels SET is_subscribed = 1 WHERE id = ?`,
+      [id]
+    );
+  }
+
+  async unsubscribeFromChannel(id: string): Promise<void> {
+    await this.db.execute(
+      `UPDATE channels SET is_subscribed = 0 WHERE id = ?`,
+      [id]
+    );
+  }
+
+  async updateChannel(id: string, updates: Partial<Channel>): Promise<void> {
+    if (updates.name) {
+      await this.db.execute(
+        `UPDATE channels SET name = ? WHERE id = ?`,
+        [updates.name, id]
+      );
+    }
+    if (updates.description) {
+      await this.db.execute(
+        `UPDATE channels SET description = ? WHERE id = ?`,
+        [updates.description, id]
+      );
+    }
+  }
+
+  async getAllChannels(): Promise<Channel[]> {
+    return this.db.query<Channel>(
+      `SELECT * FROM channels`
+    );
+  }
+
   async searchMessages(query: string): Promise<Message[]> {
     // Basic search for MVP, later we use FTS5
     return this.db.query<Message>(
