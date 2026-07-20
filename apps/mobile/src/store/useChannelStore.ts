@@ -12,6 +12,8 @@ interface ChannelState {
   joinChannel: (id: string) => Promise<void>;
   leaveChannel: (id: string) => Promise<void>;
   renameChannel: (id: string, newName: string) => Promise<void>;
+  blockChannel: (id: string) => Promise<void>;
+  reportChannel: (id: string, name: string, reason: string) => Promise<void>;
 }
 
 export const useChannelStore = create<ChannelState>((set) => ({
@@ -85,6 +87,31 @@ export const useChannelStore = create<ChannelState>((set) => ({
       set({ channels });
     } catch (error) {
       console.error('Failed to rename channel:', error);
+    }
+  },
+
+  blockChannel: async (id: string) => {
+    try {
+      await repository.block(id, 'channel');
+      await repository.unsubscribeFromChannel(id);
+      const channels = await repository.getSubscribedChannels();
+      set({ channels });
+    } catch (error) {
+      console.error('Failed to block channel:', error);
+    }
+  },
+
+  reportChannel: async (id: string, name: string, reason: string) => {
+    // For now, we'll open the mail client. Later this could be an API call.
+    const subject = encodeURIComponent(`MeshNet Report: Channel ${name}`);
+    const body = encodeURIComponent(`Reporting Channel ID: ${id}\nName: ${name}\nReason: ${reason}\n\nSent from MeshNet App.`);
+    const mailto = `mailto:beardmachinegames@gmail.com?subject=${subject}&body=${body}`;
+
+    try {
+      const { Linking } = require('react-native');
+      await Linking.openURL(mailto);
+    } catch (error) {
+      console.error('Failed to open mail client for reporting:', error);
     }
   }
 }));

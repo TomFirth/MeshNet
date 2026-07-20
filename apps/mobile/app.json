@@ -3,15 +3,47 @@
     "name": "MeshNet",
     "slug": "meshnet-mobile",
     "version": "1.0.0",
+    "icon": "./assets/icon.png",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "MeshNet needs Bluetooth to discover and sync messages with nearby peers without internet.",
+        "NSBluetoothPeripheralUsageDescription": "MeshNet needs Bluetooth to discover and sync messages with nearby peers without internet."
+      },
+      "bundleIdentifier": "com.meshnet"
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
-    }
+      },
+      "package": "com.meshnet",
+      "versionCode": 1,
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_ADVERTISE",
+        "BLUETOOTH_CONNECT",
+        "ACCESS_FINE_LOCATION",
+        "NEARBY_WIFI_DEVICES"
+      ]
+    },
+    "plugins": [
+      [
+        "@matthewwarnes/react-native-ble-manager-plugin",
+        {
+          "isBackgroundEnabled": true,
+          "bluetoothAlwaysPermission": "MeshNet needs Bluetooth to discover and sync messages with nearby peers without internet."
+        }
+      ]
+    ]
   }
 }

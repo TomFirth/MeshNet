@@ -10,7 +10,10 @@
     "build": "npm run build --workspaces",
     "start:relay": "npm run start --workspace=@meshnet/relay",
     "start:simulator": "npm run start --workspace=@meshnet/simulator",
-    "start:client": "npm run start --workspace=@meshnet/mobile"
+    "start:client": "npm run start --workspace=@meshnet/mobile",
+    "clean": "rimraf node_modules apps/mobile/node_modules apps/mobile/android apps/mobile/ios package-lock.json",
+    "mobile:android": "cd apps/mobile && npx expo run:android",
+    "mobile:ios": "cd apps/mobile && npx expo run:ios"
   },
   "devDependencies": {
     "jest": "^29.7.0",
@@ -18,5 +21,10 @@
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "@matthewwarnes/react-native-ble-manager-plugin": {
+      "expo": "~51.0.0"
+    }
   }
 }

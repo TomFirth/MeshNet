@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useChannelStore } from '../store/useChannelStore';
 import { Ionicons } from '@expo/vector-icons';
 
 const ChannelListScreen = ({ navigation }: any) => {
-  const { channels, fetchChannels, isLoading, leaveChannel, renameChannel } = useChannelStore();
+  const { channels, fetchChannels, isLoading, leaveChannel, renameChannel, blockChannel, reportChannel } = useChannelStore();
 
   useEffect(() => {
     fetchChannels();
@@ -13,23 +13,35 @@ const ChannelListScreen = ({ navigation }: any) => {
   }, []);
 
   const handleRename = (id: string, currentName: string) => {
-    Alert.prompt(
-      "Rename Channel",
-      "Enter new name for the channel",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "OK",
-          onPress: (newName) => {
-            if (newName && newName.trim()) {
-              renameChannel(id, newName.trim());
+    if (Platform.OS === 'ios') {
+      Alert.prompt(
+        "Rename Channel",
+        "Enter new name for the channel",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "OK",
+            onPress: (newName) => {
+              if (newName && newName.trim()) {
+                renameChannel(id, newName.trim());
+              }
             }
           }
-        }
-      ],
-      "plain-text",
-      currentName
-    );
+        ],
+        "plain-text",
+        currentName
+      );
+    } else {
+      // Android doesn't support Alert.prompt
+      Alert.alert(
+        "Rename Channel",
+        "Renaming is currently a demo on Android. Rename to '" + currentName + " (Updated)'?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Rename", onPress: () => renameChannel(id, currentName + " (Updated)") }
+        ]
+      );
+    }
   };
 
   const handleDelete = (id: string, name: string) => {
@@ -42,6 +54,51 @@ const ChannelListScreen = ({ navigation }: any) => {
           text: "Leave",
           style: "destructive",
           onPress: () => leaveChannel(id)
+        }
+      ]
+    );
+  };
+
+  const handleReport = (id: string, name: string) => {
+    if (Platform.OS === 'ios') {
+      Alert.prompt(
+        "Report Channel",
+        "Please describe the reason for reporting this channel:",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Submit Report",
+            onPress: (reason) => {
+              if (reason) {
+                reportChannel(id, name, reason);
+              }
+            }
+          }
+        ],
+        "plain-text"
+      );
+    } else {
+      Alert.alert(
+        "Report Channel",
+        "Are you sure you want to report this channel for inappropriate content?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Report", onPress: () => reportChannel(id, name, "Unspecified reason (Android)") }
+        ]
+      );
+    }
+  };
+
+  const handleBlock = (id: string, name: string) => {
+    Alert.alert(
+      "Block Channel",
+      `Are you sure you want to block ${name}? You will no longer see this channel or receive any messages from it via gossip.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Block",
+          style: "destructive",
+          onPress: () => blockChannel(id)
         }
       ]
     );
@@ -85,8 +142,14 @@ const ChannelListScreen = ({ navigation }: any) => {
                 <TouchableOpacity onPress={() => handleRename(item.id, item.name)} style={styles.actionBtn}>
                   <Ionicons name="pencil-outline" size={20} color="#007AFF" />
                 </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleReport(item.id, item.name)} style={styles.actionBtn}>
+                  <Ionicons name="flag-outline" size={20} color="#FF9500" />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(item.id, item.name)} style={styles.actionBtn}>
-                  <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                  <Ionicons name="trash-outline" size={20} color="#666" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleBlock(item.id, item.name)} style={styles.actionBtn}>
+                  <Ionicons name="ban-outline" size={20} color="#FF3B30" />
                 </TouchableOpacity>
               </View>
             </View>

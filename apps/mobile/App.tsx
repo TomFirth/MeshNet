@@ -8,11 +8,14 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { initDatabase } from './src/database/sqlite.service';
 import { useMesh } from './src/hooks/useMesh';
 
+function MeshWorker() {
+  useMesh(); // Start the mesh logic only when this component is mounted
+  return null;
+}
+
 export default function App() {
   const [dbReady, setDbReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useMesh(); // Start the background gossip simulator
 
   useEffect(() => {
     initDatabase()
@@ -45,6 +48,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      <MeshWorker />
       <NavigationContainer>
         <AppNavigator />
       </NavigationContainer>

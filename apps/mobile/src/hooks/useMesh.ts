@@ -2,29 +2,69 @@ import { useEffect, useRef } from 'react';
 import { SyncEngine, Message, Channel, Transport } from '@meshnet/protocol';
 import repository from '../database/sqlite.service';
 import { useMessageStore } from '../store/useMessageStore';
-import { useChannelStore } from '../store/useChannelStore';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { bleTransport } from '../transport/BleTransport';
 import { v4 as uuidv4 } from 'uuid';
+import * as Crypto from 'expo-crypto';
 
 /**
  * useMesh hook
- * Orchestrates the background gossip process and simulates nearby peers.
+ * Orchestrates the background gossip process and manages p2p transports.
  */
 export const useMesh = () => {
   const engineRef = useRef<SyncEngine | null>(null);
-  const { fetchChannels } = useChannelStore();
   const { addReceivedMessages } = useMessageStore();
+  const { isSimulatorEnabled, setNodeId } = useSettingsStore();
 
   useEffect(() => {
-    // 1. Initialize Sync Engine
-    engineRef.current = new SyncEngine(repository, 'MyLocalNodeID');
+    const initMesh = async () => {
+      // 1. Get or Create a Persistent Node ID
+      let nodeId = 'Node_Unknown';
+      try {
+        const identities = await repository.query<{id: string}>('SELECT id FROM identities LIMIT 1');
+        if (identities.length > 0) {
+          nodeId = identities[0].id;
+        } else {
+          nodeId = 'Node_' + uuidv4().slice(0, 8);
+          await repository.execute('INSERT INTO identities (id) VALUES (?)', [nodeId]);
+        }
+      } catch (e) {
+        nodeId = 'Node_' + uuidv4().slice(0, 8);
+      }
 
-    // 2. Setup Background Gossip Loop (Simulation)
+      setNodeId(nodeId);
+
+      // 2. Initialize Sync Engine
+      const engine = new SyncEngine(repository, nodeId);
+      engineRef.current = engine;
+
+      // 3. Initialize Real P2P Transport (BLE)
+      bleTransport.setEngine(engine);
+      try {
+        await bleTransport.start();
+        console.log(`[Mesh] Real P2P started with Persistent Node ID: ${nodeId}`);
+      } catch (err) {
+        console.warn('[Mesh] BLE Transport could not start. Are you on a real device?', err);
+      }
+    };
+
+    initMesh();
+  }, []);
+
+  useEffect(() => {
+    // 4. Setup Background Gossip Loop (Simulation)
+    if (!isSimulatorEnabled) {
+      console.log('[Mesh] Simulator disabled');
+      return;
+    }
+
+    console.log('[Mesh] Simulator enabled - virtual peers will appear every 15s');
     const interval = setInterval(() => {
       simulateNearbyPeer();
-    }, 15000); // Peer walks by every 15 seconds
+    }, 15000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isSimulatorEnabled]);
 
   const simulateNearbyPeer = async () => {
     if (!engineRef.current) return;
@@ -32,19 +72,13 @@ export const useMesh = () => {
     const peerId = 'VirtualPeer_' + Math.floor(Math.random() * 1000);
     console.log(`[Mesh] Encountered ${peerId}`);
 
-    // Simple In-Memory Transport for simulation
     const mockTransport: Transport = {
       sendInventory: async (id, ids) => {
         console.log(`  [SIM] Giving my inventory to ${id}`);
-        // In a real sync, the peer would respond with its own inventory
-        // Here we simulate the peer giving us something NEW
         setTimeout(() => simulatePeerResponse(id), 1000);
       },
       requestMessages: async (id, ids) => console.log(`  [SIM] Requesting ${ids.length} messages`),
-      sendMessages: async (id, msgs) => {
-        console.log(`  [SIM] Delivering ${msgs.length} messages to ${id}`);
-      },
-      // Channel Gossip
+      sendMessages: async (id, msgs) => console.log(`  [SIM] Delivering ${msgs.length} messages to ${id}`),
       sendChannelInventory: async (id, ids) => console.log(`  [SIM] Sending Channel Inventory`),
       requestChannels: async (id, ids) => console.log(`  [SIM] Requesting ${ids.length} channels`),
       sendChannels: async (id, channels) => console.log(`  [SIM] Delivering ${channels.length} channels`)
@@ -54,7 +88,6 @@ export const useMesh = () => {
   };
 
   const simulatePeerResponse = async (peerId: string) => {
-    // 1. Simulate a peer having a message we don't have
     const newMsg: Message = {
       id: uuidv4(),
       channelId: 'global',
@@ -65,7 +98,6 @@ export const useMesh = () => {
       payload: new TextEncoder().encode("Hello from the mesh!")
     };
 
-    // 2. Simulate a peer having a CHANNEL we don't have
     const newChannel: Channel = {
       id: uuidv4(),
       name: 'Nearby Group ' + peerId.slice(-3),
@@ -78,7 +110,6 @@ export const useMesh = () => {
     if (engineRef.current) {
         await engineRef.current.onMessagesReceived([newMsg]);
         addReceivedMessages(newMsg.channelId, [newMsg]);
-
         await engineRef.current.onChannelsReceived([newChannel]);
         console.log(`[Mesh] Discovered new channel: ${newChannel.name}`);
     }

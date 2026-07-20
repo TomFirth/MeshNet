@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TextInput, Button, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, FlatList, TextInput, Button, StyleSheet, KeyboardAvoidingView, Platform, Alert, TouchableOpacity } from 'react-native';
 import { useMessageStore } from '../store/useMessageStore';
 import { useChannelStore } from '../store/useChannelStore';
 
 const ChatScreen = ({ route }: any) => {
   const { channelId, name } = route.params;
-  const { messages, fetchMessages, sendMessage, isLoading } = useMessageStore();
+  const { messages, fetchMessages, sendMessage, blockUser, reportUser } = useMessageStore();
   const [inputText, setInputText] = useState('');
 
   useEffect(() => {
@@ -26,6 +26,52 @@ const ChatScreen = ({ route }: any) => {
     return String(payload);
   };
 
+  const handleLongPress = (userId: string) => {
+    if (userId === 'Me') return;
+
+    Alert.alert(
+      "User Actions",
+      `What would you like to do with ${userId}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Report User",
+          onPress: () => {
+            if (Platform.OS === 'ios') {
+              Alert.prompt(
+                "Report User",
+                "Reason for reporting:",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Submit", onPress: (reason) => reportUser(userId, reason || "No reason provided") }
+                ]
+              );
+            } else {
+              Alert.alert("Report User", "Report this user for inappropriate behavior?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Report", onPress: () => reportUser(userId, "Unspecified reason (Android)") }
+              ]);
+            }
+          }
+        },
+        {
+          text: "Block User",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Block User",
+              `Are you sure you want to block ${userId}? Their messages will be hidden.`,
+              [
+                { text: "Cancel", style: "cancel" },
+                { text: "Block", style: "destructive", onPress: () => blockUser(userId) }
+              ]
+            );
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -37,11 +83,15 @@ const ChatScreen = ({ route }: any) => {
         keyExtractor={(item) => item.id}
         inverted
         renderItem={({ item }) => (
-          <View style={[styles.bubble, item.senderId === 'Me' ? styles.myBubble : styles.peerBubble]}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onLongPress={() => handleLongPress(item.senderId)}
+            style={[styles.bubble, item.senderId === 'Me' ? styles.myBubble : styles.peerBubble]}
+          >
             <Text style={styles.sender}>{item.senderId}</Text>
             <Text style={styles.text}>{decodePayload(item.payload)}</Text>
             <Text style={styles.time}>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-          </View>
+          </TouchableOpacity>
         )}
       />
       <View style={styles.inputContainer}>

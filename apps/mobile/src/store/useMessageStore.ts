@@ -9,6 +9,8 @@ interface MessageState {
   fetchMessages: (channelId: string) => Promise<void>;
   sendMessage: (channelId: string, text: string, senderId: string) => Promise<void>;
   addReceivedMessages: (channelId: string, newMessages: Message[]) => void;
+  blockUser: (userId: string) => Promise<void>;
+  reportUser: (userId: string, reason: string) => Promise<void>;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -53,5 +55,31 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         [channelId]: [...newMessages, ...(state.messages[channelId] || [])]
       }
     }));
+  },
+
+  blockUser: async (userId: string) => {
+    try {
+      await repository.block(userId, 'user');
+      // Refresh messages to filter out the blocked user's messages
+      const state = get();
+      for (const channelId in state.messages) {
+        await state.fetchMessages(channelId);
+      }
+    } catch (error) {
+      console.error('Failed to block user:', error);
+    }
+  },
+
+  reportUser: async (userId: string, reason: string) => {
+    const subject = encodeURIComponent(`MeshNet Report: User ${userId}`);
+    const body = encodeURIComponent(`Reporting User ID: ${userId}\nReason: ${reason}\n\nSent from MeshNet App.`);
+    const mailto = `mailto:beardmachinegames@gmail.com?subject=${subject}&body=${body}`;
+
+    try {
+      const { Linking } = require('react-native');
+      await Linking.openURL(mailto);
+    } catch (error) {
+      console.error('Failed to open mail client for reporting:', error);
+    }
   }
 }));

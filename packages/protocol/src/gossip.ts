@@ -1,4 +1,4 @@
-import { Message } from './models';
+import { Message, Channel } from './models';
 import { MessageRepository } from './storage';
 import { Transport } from './transport';
 
@@ -6,7 +6,13 @@ export class SyncEngine {
   constructor(private repo: MessageRepository, private nodeId: string) {}
 
   async onPeerDiscovered(peerId: string, transport: Transport) {
-    // 1. Message Sync
+    // 1. Check if peer is blocked
+    if (await this.repo.isBlocked(peerId)) {
+      console.log(`[Sync] Ignoring blocked peer ${peerId}`);
+      return;
+    }
+
+    // 2. Message Sync
     const messages = await this.repo.getChannelMessages('', 1000);
     const msgIds = messages.map(m => m.id);
     await transport.sendInventory(peerId, msgIds);
@@ -36,12 +42,17 @@ export class SyncEngine {
   }
 
   async onChannelsReceived(channels: Channel[]) {
+    const blocks = await this.repo.getBlockedIds();
     for (const channel of channels) {
-      await this.repo.insertChannel(channel);
+      if (!blocks.has(channel.id)) {
+        await this.repo.insertChannel(channel);
+      }
     }
   }
 
   async onInventoryReceived(peerId: string, peerIds: string[], transport: Transport) {
+    if (await this.repo.isBlocked(peerId)) return;
+
     const localMessages = await this.repo.getChannelMessages('', 1000);
     const localIds = new Set(localMessages.map(m => m.id));
 
@@ -63,8 +74,11 @@ export class SyncEngine {
   }
 
   async onMessagesReceived(messages: Message[]) {
+    const blocks = await this.repo.getBlockedIds();
     for (const msg of messages) {
-      await this.repo.insertMessage(msg);
+      if (!blocks.has(msg.senderId) && !blocks.has(msg.channelId)) {
+        await this.repo.insertMessage(msg);
+      }
     }
   }
 }

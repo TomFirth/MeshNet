@@ -33,7 +33,49 @@ export class MessageRepository {
       )
     `);
 
+    await this.db.execute(`
+      CREATE TABLE IF NOT EXISTS identities (
+        id TEXT PRIMARY KEY
+      )
+    `);
+
+    await this.db.execute(`
+      CREATE TABLE IF NOT EXISTS blocks (
+        target_id TEXT PRIMARY KEY,
+        type TEXT NOT NULL
+      )
+    `);
+
     await this.db.execute(`CREATE INDEX IF NOT EXISTS idx_msg_chan ON messages(channel_id, timestamp DESC)`);
+  }
+
+  async block(id: string, type: 'user' | 'channel') {
+    await this.db.execute(
+      `INSERT OR IGNORE INTO blocks (target_id, type) VALUES (?, ?)`,
+      [id, type]
+    );
+  }
+
+  async unblock(id: string) {
+    await this.db.execute(
+      `DELETE FROM blocks WHERE target_id = ?`,
+      [id]
+    );
+  }
+
+  async isBlocked(id: string): Promise<boolean> {
+    const result = await this.db.query<{target_id: string}>(
+      `SELECT target_id FROM blocks WHERE target_id = ?`,
+      [id]
+    );
+    return result.length > 0;
+  }
+
+  async getBlockedIds(): Promise<Set<string>> {
+    const results = await this.db.query<{target_id: string}>(
+      `SELECT target_id FROM blocks`
+    );
+    return new Set(results.map(r => r.target_id));
   }
 
   async insertMessage(msg: Message) {
@@ -55,19 +97,27 @@ export class MessageRepository {
   async getChannelMessages(channelId: string, limit: number = 50): Promise<Message[]> {
     if (!channelId || channelId === '') {
       return this.db.query<Message>(
-        `SELECT * FROM messages ORDER BY timestamp DESC LIMIT ?`,
+        `SELECT * FROM messages
+         WHERE sender_id NOT IN (SELECT target_id FROM blocks WHERE type = 'user')
+         AND channel_id NOT IN (SELECT target_id FROM blocks WHERE type = 'channel')
+         ORDER BY timestamp DESC LIMIT ?`,
         [limit]
       );
     }
     return this.db.query<Message>(
-      `SELECT * FROM messages WHERE channel_id = ? ORDER BY timestamp DESC LIMIT ?`,
+      `SELECT * FROM messages
+       WHERE channel_id = ?
+       AND sender_id NOT IN (SELECT target_id FROM blocks WHERE type = 'user')
+       ORDER BY timestamp DESC LIMIT ?`,
       [channelId, limit]
     );
   }
 
   async getSubscribedChannels(): Promise<Channel[]> {
     return this.db.query<Channel>(
-      `SELECT * FROM channels WHERE is_subscribed = 1`
+      `SELECT * FROM channels
+       WHERE is_subscribed = 1
+       AND id NOT IN (SELECT target_id FROM blocks WHERE type = 'channel')`
     );
   }
 

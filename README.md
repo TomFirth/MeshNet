@@ -1,95 +1,63 @@
 # MeshNet Monorepo
 
-MeshNet is a decentralized, serverless gossip network. This repository is organized as a monorepo to facilitate code sharing between mobile, desktop, and embedded platforms.
+MeshNet is a decentralized, serverless gossip network. This repository is organized as a monorepo to facilitate code sharing between mobile, relay, and simulation platforms.
 
 ## Tech Stack
 
 - **Monorepo Manager:** [npm workspaces](https://docs.npmjs.com/cli/v7/using-npm/workspaces)
-- **Core Logic:** [TypeScript](https://www.typescriptlang.org/) (Models, Storage, Gossip)
-- **Mobile Platform:** [React Native](https://reactnative.dev/)
-- **Hardware Platform:** Node.js (Raspberry Pi)
-- **Simulator:** TypeScript (Web/Node)
+- **Core Logic:** [TypeScript](https://www.typescriptlang.org/) (Protocol, Storage, Gossip)
+- **Mobile Platform:** [React Native](https://reactnative.dev/) with [Expo](https://expo.dev/)
+- **Database:** [SQLite](https://www.sqlite.org/) (via expo-sqlite)
+- **P2P Transport:** Bluetooth Low Energy (BLE)
 
 ## Repository Structure
 
 ### `/apps` (Deployment Targets)
-- **`mobile/`**: React Native application (iOS/Android).
+- **`mobile/`**: Expo-based mobile application (iOS/Android). Uses `react-native-ble-manager` for real P2P sync.
 - **`simulator/`**: TypeScript-based network visualizer.
-- **`relay-node/`**: Node.js CLI tool for Raspberry Pi/Linux.
+- **`relay/`**: Node.js implementation for permanent mesh infrastructure.
 
 ### `/packages` (Shared Modules)
-- **`protocol/`**: The core TypeScript implementation of the MeshNet Protocol (MNP).
+- **`protocol/`**: Core implementation of the gossip engine, database models, and transport interfaces.
 
-### `/documentation`
-- Technical specifications, RFCs, identity models, and threat analysis.
+### `/scripts`
+- Automation for building and deploying.
 
 ---
 
 ## Getting Started
 
-### 1. Prerequisites
-- [Node.js](https://nodejs.org/) (v18+)
-- [npm](https://www.npmjs.com/)
-
-### 2. Installation
+### 1. Installation
 ```bash
 npm install
 ```
 
-### 3. Build Core Protocol
+### 2. Running the Mobile App (Simulator Mode)
 ```bash
-npm run build -w @meshnet/protocol
+npm run start:client
+```
+Enable the "Mesh Simulator" in the app's **Settings** tab to see virtual peers gossip messages and channels.
+
+### 3. Running on Physical Hardware
+Native Bluetooth requires a development build:
+```bash
+npm run mobile:android
+# OR
+npm run mobile:ios
 ```
 
----
-
-## Running the Components
-
-### Visual Network Simulator (God Mode)
-Watch nodes move and gossip in real-time in your browser.
+### 4. Build for Play Store
 ```bash
-npm run start:simulator
+./scripts/build-android.sh
 ```
-**Controls:**
-- **Inject Global Alert:** Starts message propagation from Node 0.
-- **Add 50 Nodes:** Increase mesh density.
-- **Visuals:** Blue dots have received the message; grey dots have not.
-
-### Developer CLI (Relay Node)
-Use this to test the protocol logic manually across virtual nodes (A, B, C).
-```bash
-npm run start:relay
-```
-**Commands:**
-- `switch <node>`: Change context (e.g., `switch B`).
-- `create-channel <name>`: Create a new 128-bit UUID channel.
-- `send-message <channel_id> <text>`: Send a message from the current node.
-- `sync <peer>`: Manually trigger a gossip handshake (e.g., `sync B`).
-- `show-storage`: View the messages in the current node's SQLite database.
 
 ---
 
 ## Testing
-
-### Core Protocol Logic
-Run the shared protocol unit tests (Storage, Gossip, Models):
+Run tests across all workspaces:
 ```bash
-cd packages/protocol
-cargo test
+npm test
 ```
-
-### Simulation Logic
-The simulator includes tests for network convergence:
-```bash
-cd apps/simulator
-cargo test
-```
-
----
 
 ## Documentation
-For detailed specifications, see the `/documentation` directory:
-- [Architecture](documentation/architecture.md)
-- [Protocol RFC](documentation/protocol.md)
-- [Identity Model](documentation/identity_model.md)
-- [Roadmap](documentation/roadmap.md)
+For detailed specifications, see the `/documentation` directory.
