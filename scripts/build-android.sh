@@ -55,13 +55,45 @@ with open(path, 'r') as f:
 # Replace classpath with stable version for Expo 51
 content = re.sub(r"classpath\('com\.android\.tools\.build:gradle'\)", "classpath('com.android.tools.build:gradle:8.1.1')", content)
 
+# Update target to 35 but keep compile at 34 to avoid Expo 51 source incompatibilities
+# Google Play requires targetSdkVersion 35, but compileSdkVersion can stay at 34.
+content = re.sub(r"compileSdkVersion = Integer\.parseInt\(findProperty\('android\.compileSdkVersion'\) \?: '34'\)", "compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '34')", content)
+content = re.sub(r"targetSdkVersion = Integer\.parseInt\(findProperty\('android\.targetSdkVersion'\) \?: '34'\)", "targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '35')", content)
+
+# Update Kotlin version
+content = re.sub(r"kotlinVersion = findProperty\('android\.kotlinVersion'\) \?: '1\.9\.23'", "kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.24'", content)
+
 # Inject NDK configuration to ensure all subprojects use the correct NDK
 patch = """
     if (project.state.executed) {
-        if (project.hasProperty('android')) { project.android { ndkVersion = "$NDK_VERSION" } }
+        if (project.hasProperty('android')) {
+            project.android {
+                ndkVersion = "$NDK_VERSION"
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+            }
+            if (project.hasProperty('tasks')) {
+                project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                    kotlinOptions { jvmTarget = "17" }
+                }
+            }
+        }
     } else {
         project.afterEvaluate {
-            if (project.hasProperty('android')) { project.android { ndkVersion = "$NDK_VERSION" } }
+            if (project.hasProperty('android')) {
+                project.android {
+                    ndkVersion = "$NDK_VERSION"
+                    compileOptions {
+                        sourceCompatibility JavaVersion.VERSION_17
+                        targetCompatibility JavaVersion.VERSION_17
+                    }
+                }
+                project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                    kotlinOptions { jvmTarget = "17" }
+                }
+            }
         }
     }
 """

@@ -1,4 +1,4 @@
-package com.meshnet
+package com.beardmachinegames.meshnet
 
 import android.app.Application
 import android.content.res.Configuration

@@ -2,7 +2,7 @@
   "expo": {
     "name": "MeshNet",
     "slug": "meshnet-mobile",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "icon": "./assets/icon.png",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -24,8 +24,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.meshnet",
-      "versionCode": 1,
+      "package": "com.beardmachinegames.meshnet",
+      "versionCode": 2,
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
       "permissions": [
         "BLUETOOTH",
         "BLUETOOTH_ADMIN",

@@ -5,8 +5,8 @@ buildscript {
         buildToolsVersion = findProperty('android.buildToolsVersion') ?: '34.0.0'
         minSdkVersion = Integer.parseInt(findProperty('android.minSdkVersion') ?: '23')
         compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '34')
-        targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '34')
-        kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.23'
+        targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '35')
+        kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.24'
 
         ndkVersion = "26.1.10909125"
     }
@@ -22,14 +22,6 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
-
-def configureAndroidProject(project) {
-    if (project.hasProperty('android')) {
-        project.android {
-            ndkVersion = "26.1.10909125"
-        }
-    }
-}
 
 allprojects {
     repositories {
@@ -48,10 +40,34 @@ allprojects {
     }
 
     if (project.state.executed) {
-        configureAndroidProject(project)
+        if (project.hasProperty('android')) {
+            project.android {
+                ndkVersion = "26.1.10909125"
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+            }
+            if (project.hasProperty('tasks')) {
+                project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                    kotlinOptions { jvmTarget = "17" }
+                }
+            }
+        }
     } else {
         project.afterEvaluate {
-            configureAndroidProject(project)
+            if (project.hasProperty('android')) {
+                project.android {
+                    ndkVersion = "26.1.10909125"
+                    compileOptions {
+                        sourceCompatibility JavaVersion.VERSION_17
+                        targetCompatibility JavaVersion.VERSION_17
+                    }
+                }
+                project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                    kotlinOptions { jvmTarget = "17" }
+                }
+            }
         }
     }
 }
