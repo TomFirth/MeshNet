@@ -26,5 +26,8 @@
     "@matthewwarnes/react-native-ble-manager-plugin": {
       "expo": "~51.0.0"
     }
+  },
+  "dependencies": {
+    "react-native-safe-area-context": "4.12.0"
   }
 }

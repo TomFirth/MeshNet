@@ -1,5 +1,3 @@
-import 'react-native-get-random-values';
-import 'fast-text-encoding';
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
