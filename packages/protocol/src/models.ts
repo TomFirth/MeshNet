@@ -7,6 +7,7 @@ export enum ChannelType {
 export interface Channel {
   id: string; // UUID
   name: string;
+  localName?: string;
   description?: string;
   channelType: ChannelType;
   createdAt: number;
@@ -21,7 +22,9 @@ export interface Message {
   timestamp: number;
   expiry: number;
   priority: number;
-  payload: Uint8Array; // Binary data
+  payload: Uint8Array; // Binary data (may be encrypted)
+  nonce?: Uint8Array; // Used if payload is encrypted
+  signature?: Uint8Array; // Ed25519 signature
 }
 
 export interface UserIdentity {

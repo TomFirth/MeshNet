@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Message } from '@meshnet/protocol';
+import { Message, CryptoEngine } from '@meshnet/protocol';
 import repository from '../database/sqlite.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -27,14 +27,20 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   },
 
   sendMessage: async (channelId: string, text: string, senderId: string) => {
+    // Generate a persistent identity if needed (in production this comes from secure storage)
+    const iden = CryptoEngine.generateIdentityKeyPair();
+    const payload = new TextEncoder().encode(text);
+    const signature = CryptoEngine.sign(payload, iden.privateKey);
+
     const newMessage: Message = {
       id: uuidv4(),
       channelId,
-      senderId,
+      senderId: CryptoEngine.toHex(iden.publicKey),
       timestamp: Date.now(),
       expiry: 0,
       priority: 1,
-      payload: new TextEncoder().encode(text)
+      payload: payload,
+      signature: signature
     };
 
     await repository.insertMessage(newMessage);

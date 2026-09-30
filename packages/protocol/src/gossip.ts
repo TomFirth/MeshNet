@@ -1,6 +1,7 @@
 import { Message, Channel } from './models';
 import { MessageRepository } from './storage';
 import { Transport } from './transport';
+import { CryptoEngine } from './crypto';
 
 export class SyncEngine {
   constructor(private repo: MessageRepository, private nodeId: string) {}
@@ -76,9 +77,26 @@ export class SyncEngine {
   async onMessagesReceived(messages: Message[]) {
     const blocks = await this.repo.getBlockedIds();
     for (const msg of messages) {
-      if (!blocks.has(msg.senderId) && !blocks.has(msg.channelId)) {
-        await this.repo.insertMessage(msg);
+      if (blocks.has(msg.senderId) || blocks.has(msg.channelId)) {
+        continue;
       }
+
+      // Security: Verify signature if present
+      if (msg.signature) {
+        try {
+          const senderPubKey = CryptoEngine.fromHex(msg.senderId);
+          const isValid = CryptoEngine.verify(msg.payload, msg.signature, senderPubKey);
+          if (!isValid) {
+            console.warn(`[Gossip] Invalid signature from ${msg.senderId}. Dropping message.`);
+            continue;
+          }
+        } catch (e) {
+          console.error(`[Gossip] Signature verification error for sender ${msg.senderId}: ${e}`);
+          continue;
+        }
+      }
+
+      await this.repo.insertMessage(msg);
     }
   }
 }

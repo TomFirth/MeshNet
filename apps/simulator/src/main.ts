@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { SyncEngine, MessageRepository, DatabaseDriver, Message } from '@meshnet/protocol';
+import { SyncEngine, MessageRepository, DatabaseDriver, Message, CryptoEngine } from '@meshnet/protocol';
 import { v4 as uuidv4 } from 'uuid';
 
 class SimulationDriver implements DatabaseDriver {
@@ -11,7 +11,9 @@ class SimulationDriver implements DatabaseDriver {
         this.messages.push({
           id: params[0], channelId: params[1], senderId: params[2],
           timestamp: params[3], expiry: params[4], priority: params[5],
-          payload: params[6]
+          payload: params[6],
+          nonce: params[7],
+          signature: params[8]
         });
       }
     }
@@ -121,7 +123,19 @@ class World {
     }
 
     async injectMessage() {
-        const msg: Message = { id: uuidv4(), channelId: 'global', senderId: 'GOD', timestamp: Date.now(), expiry: 0, priority: 1, payload: new TextEncoder().encode("GLOBAL ALERT") };
+        const iden = CryptoEngine.generateIdentityKeyPair();
+        const payload = new TextEncoder().encode("GLOBAL ALERT");
+        const signature = CryptoEngine.sign(payload, iden.privateKey);
+        const msg: Message = {
+          id: uuidv4(),
+          channelId: 'global',
+          senderId: CryptoEngine.toHex(iden.publicKey),
+          timestamp: Date.now(),
+          expiry: 0,
+          priority: 1,
+          payload: payload,
+          signature: signature
+        };
         this.seedMsgId = msg.id;
         const first = Array.from(this.nodes.values())[0];
         await first.engine.onMessagesReceived([msg]);

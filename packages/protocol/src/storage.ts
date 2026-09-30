@@ -12,12 +12,14 @@ export class MessageRepository {
     await this.db.execute(`
       CREATE TABLE IF NOT EXISTS messages (
         id TEXT PRIMARY KEY,
-        channel_id TEXT,
-        sender_id TEXT,
+        channelId TEXT,
+        senderId TEXT,
         timestamp INTEGER,
         expiry INTEGER,
         priority INTEGER,
-        payload BLOB
+        payload BLOB,
+        nonce BLOB,
+        signature BLOB
       )
     `);
 
@@ -25,11 +27,12 @@ export class MessageRepository {
       CREATE TABLE IF NOT EXISTS channels (
         id TEXT PRIMARY KEY,
         name TEXT,
+        localName TEXT,
         description TEXT,
-        channel_type TEXT,
-        created_at INTEGER,
+        channelType TEXT,
+        createdAt INTEGER,
         scope TEXT,
-        is_subscribed INTEGER DEFAULT 0
+        isSubscribed INTEGER DEFAULT 0
       )
     `);
 
@@ -46,7 +49,7 @@ export class MessageRepository {
       )
     `);
 
-    await this.db.execute(`CREATE INDEX IF NOT EXISTS idx_msg_chan ON messages(channel_id, timestamp DESC)`);
+    await this.db.execute(`CREATE INDEX IF NOT EXISTS idx_msg_chan ON messages(channelId, timestamp DESC)`);
   }
 
   async block(id: string, type: 'user' | 'channel') {
@@ -80,15 +83,15 @@ export class MessageRepository {
 
   async insertMessage(msg: Message) {
     await this.db.execute(
-      `INSERT OR IGNORE INTO messages (id, channel_id, sender_id, timestamp, expiry, priority, payload)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [msg.id, msg.channelId, msg.senderId, msg.timestamp, msg.expiry, msg.priority, msg.payload]
+      `INSERT OR IGNORE INTO messages (id, channelId, senderId, timestamp, expiry, priority, payload, nonce, signature)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [msg.id, msg.channelId, msg.senderId, msg.timestamp, msg.expiry, msg.priority, msg.payload, msg.nonce, msg.signature]
     );
   }
 
   async insertChannel(channel: Channel) {
     await this.db.execute(
-      `INSERT OR REPLACE INTO channels (id, name, description, channel_type, created_at, scope)
+      `INSERT OR REPLACE INTO channels (id, name, description, channelType, createdAt, scope)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [channel.id, channel.name, channel.description, channel.channelType, channel.createdAt, channel.scope]
     );
@@ -98,16 +101,16 @@ export class MessageRepository {
     if (!channelId || channelId === '') {
       return this.db.query<Message>(
         `SELECT * FROM messages
-         WHERE sender_id NOT IN (SELECT target_id FROM blocks WHERE type = 'user')
-         AND channel_id NOT IN (SELECT target_id FROM blocks WHERE type = 'channel')
+         WHERE senderId NOT IN (SELECT target_id FROM blocks WHERE type = 'user')
+         AND channelId NOT IN (SELECT target_id FROM blocks WHERE type = 'channel')
          ORDER BY timestamp DESC LIMIT ?`,
         [limit]
       );
     }
     return this.db.query<Message>(
       `SELECT * FROM messages
-       WHERE channel_id = ?
-       AND sender_id NOT IN (SELECT target_id FROM blocks WHERE type = 'user')
+       WHERE channelId = ?
+       AND senderId NOT IN (SELECT target_id FROM blocks WHERE type = 'user')
        ORDER BY timestamp DESC LIMIT ?`,
       [channelId, limit]
     );
@@ -116,32 +119,38 @@ export class MessageRepository {
   async getSubscribedChannels(): Promise<Channel[]> {
     return this.db.query<Channel>(
       `SELECT * FROM channels
-       WHERE is_subscribed = 1
+       WHERE isSubscribed = 1
        AND id NOT IN (SELECT target_id FROM blocks WHERE type = 'channel')`
     );
   }
 
   async getUnsubscribedChannels(): Promise<Channel[]> {
     return this.db.query<Channel>(
-      `SELECT * FROM channels WHERE is_subscribed = 0`
+      `SELECT * FROM channels WHERE isSubscribed = 0`
     );
   }
 
   async subscribeToChannel(id: string): Promise<void> {
     await this.db.execute(
-      `UPDATE channels SET is_subscribed = 1 WHERE id = ?`,
+      `UPDATE channels SET isSubscribed = 1 WHERE id = ?`,
       [id]
     );
   }
 
   async unsubscribeFromChannel(id: string): Promise<void> {
     await this.db.execute(
-      `UPDATE channels SET is_subscribed = 0 WHERE id = ?`,
+      `UPDATE channels SET isSubscribed = 0 WHERE id = ?`,
       [id]
     );
   }
 
   async updateChannel(id: string, updates: Partial<Channel>): Promise<void> {
+    if (updates.localName !== undefined) {
+      await this.db.execute(
+        `UPDATE channels SET localName = ? WHERE id = ?`,
+        [updates.localName, id]
+      );
+    }
     if (updates.name) {
       await this.db.execute(
         `UPDATE channels SET name = ? WHERE id = ?`,

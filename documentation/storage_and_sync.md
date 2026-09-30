@@ -5,7 +5,8 @@ MeshNet uses SQLite with WAL mode for performance on mobile and embedded devices
 
 ### Schema Highlights
 - **`messages`:** Stores binary UUIDs (BLOB) for speed.
-- **`channels`:** Tracks local subscriptions and encryption keys.
+- **`channels`:** Tracks local subscriptions, encryption keys, and **local aliases**.
+    - **`local_name`:** An optional column for user-defined channel names that are never gossiped.
 - **`sync_buckets`:** Caches hashes of time-slices to speed up Merkle Tree generation.
 - **`fts_messages`:** FTS5 virtual table for full-text search (plaintext only).
 

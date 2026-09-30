@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { SyncEngine, Message, Channel, Transport } from '@meshnet/protocol';
+import { SyncEngine, Message, Channel, Transport, CryptoEngine } from '@meshnet/protocol';
 import repository from '../database/sqlite.service';
 import { useMessageStore } from '../store/useMessageStore';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -88,14 +88,23 @@ export const useMesh = () => {
   };
 
   const simulatePeerResponse = async (peerId: string) => {
+    // Generate a temporary keypair for the simulated peer to sign messages
+    const simPeerPair = CryptoEngine.generateIdentityKeyPair();
+    const simPeerId = CryptoEngine.toHex(simPeerPair.publicKey);
+
+    // 1. Simulate a peer having a message we don't have
+    const payload = new TextEncoder().encode("Hello from the secure mesh!");
+    const signature = CryptoEngine.sign(payload, simPeerPair.privateKey);
+
     const newMsg: Message = {
       id: uuidv4(),
       channelId: 'global',
-      senderId: peerId,
+      senderId: simPeerId,
       timestamp: Date.now(),
       expiry: 0,
       priority: 1,
-      payload: new TextEncoder().encode("Hello from the mesh!")
+      payload: payload,
+      signature: signature
     };
 
     const newChannel: Channel = {

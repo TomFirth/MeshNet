@@ -82,7 +82,7 @@ export const useChannelStore = create<ChannelState>((set) => ({
 
   renameChannel: async (id: string, newName: string) => {
     try {
-      await repository.updateChannel(id, { name: newName });
+      await repository.updateChannel(id, { local_name: newName });
       const channels = await repository.getSubscribedChannels();
       set({ channels });
     } catch (error) {

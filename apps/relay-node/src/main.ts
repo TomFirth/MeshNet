@@ -1,8 +1,17 @@
-import { SyncEngine, MessageRepository, ChannelType, Message, Channel, DatabaseDriver } from '@meshnet/protocol';
+import { SyncEngine, MessageRepository, ChannelType, Message, Channel, DatabaseDriver, CryptoEngine } from '@meshnet/protocol';
 import * as readline from 'readline';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
+
+// Load or generate local identity for each node
+const identities = new Map<string, { publicKey: Uint8Array, privateKey: Uint8Array }>();
+function getIdentity(nodeId: string) {
+  if (!identities.has(nodeId)) {
+    identities.set(nodeId, CryptoEngine.generateIdentityKeyPair());
+  }
+  return identities.get(nodeId)!;
+}
 
 class JsonFileDriver implements DatabaseDriver {
   private filePath: string;
@@ -53,16 +62,14 @@ class JsonFileDriver implements DatabaseDriver {
     if (sql_up.includes('FROM MESSAGES')) {
       let results = [...this.data.messages];
 
-      // If query has WHERE channel_id = ?, params[0] is channelId, params[1] is limit
-      // If query is SELECT * FROM messages, params[0] is just the limit!
-      if (sql_up.includes('WHERE CHANNEL_ID = ?')) {
+      if (sql_up.includes('WHERE CHANNELID = ?')) {
         const filterId = params[0];
         if (filterId && filterId !== '' && filterId !== '00000000-0000-0000-0000-000000000000') {
            results = results.filter(m => m.channelId === filterId);
         }
       }
 
-      const limit = sql_up.includes('WHERE CHANNEL_ID = ?') ? params[1] : params[0];
+      const limit = sql_up.includes('WHERE CHANNELID = ?') ? params[1] : params[0];
 
       return results.map(m => ({ ...m, payload: new Uint8Array(m.payload) }))
                     .sort((a, b) => b.timestamp - a.timestamp)
@@ -149,9 +156,21 @@ rl.on('line', async (line) => {
         break;
       case 'send-message':
         if (parts.length < 3) { console.log('Usage: send-message <channel_id> <text>'); break; }
-        const msg: Message = { id: uuidv4(), channelId: parts[1], senderId: currentNodeId, timestamp: Date.now(), expiry: 0, priority: 1, payload: new TextEncoder().encode(parts.slice(2).join(' ')) };
+        const iden = getIdentity(currentNodeId);
+        const payload = new TextEncoder().encode(parts.slice(2).join(' '));
+        const signature = CryptoEngine.sign(payload, iden.privateKey);
+        const msg: Message = {
+          id: uuidv4(),
+          channelId: parts[1],
+          senderId: CryptoEngine.toHex(iden.publicKey),
+          timestamp: Date.now(),
+          expiry: 0,
+          priority: 1,
+          payload: payload,
+          signature: signature
+        };
         await node.repo.insertMessage(msg);
-        console.log(`Message saved to Node ${currentNodeId} store.`);
+        console.log(`Message signed and saved to Node ${currentNodeId} store.`);
         break;
       case 'sync':
         const peerId = parts[1]?.toUpperCase();
